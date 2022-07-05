@@ -21,15 +21,18 @@ process Wire \in 1..2
         amount \in 1..acc[sender];
 
 begin
-    Withdraw: \* label - everything inside it happens in the same moment of time
-        \* if the variable already exists and you assign a new value to it, you use :=
-        acc[sender] := acc[sender] - amount;
-    Deposit:
-        acc[receiver] := acc[receiver] + amount;
-        
+    \* check we have sufficient funds before withdrawing
+    CheckFunds:
+        if amount <= acc[sender] then
+            Withdraw: \* label - everything inside it happens in the same moment of time
+                \* if the variable already exists and you assign a new value to it, you use :=
+                acc[sender] := acc[sender] - amount;
+            Deposit:
+                acc[receiver] := acc[receiver] + amount;
+        end if;
 end process; 
 end algorithm;*)
-\* BEGIN TRANSLATION (chksum(pcal) = "394af3d1" /\ chksum(tla) = "8870c481")
+\* BEGIN TRANSLATION (chksum(pcal) = "1ca341c5" /\ chksum(tla) = "ed73fad3")
 VARIABLES people, acc, pc
 
 (* define statement *)
@@ -48,7 +51,13 @@ Init == (* Global variables *)
         /\ sender = [self \in 1..2 |-> "alice"]
         /\ receiver = [self \in 1..2 |-> "bob"]
         /\ amount \in [1..2 -> 1..acc[sender[CHOOSE self \in  1..2 : TRUE]]]
-        /\ pc = [self \in ProcSet |-> "Withdraw"]
+        /\ pc = [self \in ProcSet |-> "CheckFunds"]
+
+CheckFunds(self) == /\ pc[self] = "CheckFunds"
+                    /\ IF amount[self] <= acc[sender[self]]
+                          THEN /\ pc' = [pc EXCEPT ![self] = "Withdraw"]
+                          ELSE /\ pc' = [pc EXCEPT ![self] = "Done"]
+                    /\ UNCHANGED << people, acc, sender, receiver, amount >>
 
 Withdraw(self) == /\ pc[self] = "Withdraw"
                   /\ acc' = [acc EXCEPT ![sender[self]] = acc[sender[self]] - amount[self]]
@@ -60,7 +69,7 @@ Deposit(self) == /\ pc[self] = "Deposit"
                  /\ pc' = [pc EXCEPT ![self] = "Done"]
                  /\ UNCHANGED << people, sender, receiver, amount >>
 
-Wire(self) == Withdraw(self) \/ Deposit(self)
+Wire(self) == CheckFunds(self) \/ Withdraw(self) \/ Deposit(self)
 
 (* Allow infinite stuttering to prevent deadlock on termination. *)
 Terminating == /\ \A self \in ProcSet: pc[self] = "Done"
