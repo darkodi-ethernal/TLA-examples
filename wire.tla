@@ -8,7 +8,7 @@ EXTENDS Integers
         acc = [p \in people |-> 5], 
         sender = "alice",
         receiver = "bob",
-        amount = 3;
+        amount \in 1..acc[sender];
         
 define
     \* Invariant" for all p in the set of people, their account must be greater than or equal to 0
@@ -22,7 +22,7 @@ begin
     Deposit:
         acc[receiver] := acc[receiver] + amount;
 end algorithm;*)
-\* BEGIN TRANSLATION (chksum(pcal) = "ed73f16c" /\ chksum(tla) = "f067a8a0")
+\* BEGIN TRANSLATION (chksum(pcal) = "f8cc1ca0" /\ chksum(tla) = "ec090ae7")
 VARIABLES people, acc, sender, receiver, amount, pc
 
 (* define statement *)
@@ -36,7 +36,7 @@ Init == (* Global variables *)
         /\ acc = [p \in people |-> 5]
         /\ sender = "alice"
         /\ receiver = "bob"
-        /\ amount = 3
+        /\ amount \in 1..acc[sender]
         /\ pc = "Withdraw"
 
 Withdraw == /\ pc = "Withdraw"
